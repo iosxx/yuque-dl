@@ -1,45 +1,39 @@
-name: Yuque Knowledge Base Download
+name: Download Yuque Knowledge Base
 
 on:
-  workflow_dispatch:  # 手动触发
-  schedule:
-    - cron: '0 2 * * *'  # 每天凌晨2点自动运行
+  push:
+    branches: [ main ]
 
 jobs:
-  download-yuque:
+  download:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '18'
         cache: 'npm'
 
     - name: Install yuque-dl
       run: npm install -g yuque-dl
 
-    - name: Download knowledge base
-      env:
-        YUQUE_TOKEN: ${{ secrets.YUQUE_TOKEN }}
-        YUQUE_KEY: ${{ secrets.YUQUE_KEY }}
+    - name: Download Yuque content
       run: |
-        # 基本用法
-        yuque-dl "https://www.yuque.com/david-gshie/nasbox" -d ./downloads
-        
-        # 如果有私有知识库需要token
-        # yuque-dl "https://www.yuque.com/your-private-kb" -t "$YUQUE_TOKEN"
-        
-        # 如果是企业版
-        # yuque-dl "https://your-company.yuque.com/kb" -k "$YUQUE_KEY" -t "$YUQUE_TOKEN"
+        yuque-dl "${{ vars.YUQUE_URL }}" -t "${{ secrets.YUQUE_TOKEN }}" -d ./download --incremental
+      env:
+        YUQUE_URL: ${{ vars.YUQUE_URL }}
+        YUQUE_TOKEN: ${{ secrets.YUQUE_TOKEN }}
 
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add ./downloads
-        git commit -m "Update: Download yuque knowledge base $(date)"
+        git add ./download
+        git diff --staged --quiet || git commit -m "Update Yuque knowledge base [skip ci]"
         git push
