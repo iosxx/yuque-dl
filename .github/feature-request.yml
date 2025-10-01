@@ -17,29 +17,31 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
+        # 移除了cache配置，因为不需要package.json
 
-    - name: Install yuque-dl
+    - name: Install yuque-dl globally
       run: npm install -g yuque-dl
 
     - name: Download knowledge base
       env:
         YUQUE_TOKEN: ${{ secrets.YUQUE_TOKEN }}
-        YUQUE_KEY: ${{ secrets.YUQUE_KEY }}
       run: |
-        # 基本用法
-        yuque-dl "https://www.yuque.com/david-gshie/nasbox" -d ./downloads
+        # 创建下载目录
+        mkdir -p downloads
         
-        # 如果有私有知识库需要token
-        # yuque-dl "https://www.yuque.com/your-private-kb" -t "$YUQUE_TOKEN"
+        # 下载知识库（替换为你的实际URL）
+        yuque-dl "https://www.yuque.com/your-knowledge-base-url" -d ./downloads
         
-        # 如果是企业版
-        # yuque-dl "https://your-company.yuque.com/kb" -k "$YUQUE_KEY" -t "$YUQUE_TOKEN"
+        # 或者使用token下载私有知识库
+        # yuque-dl "https://www.yuque.com/private-kb" -t "$YUQUE_TOKEN" -d ./downloads
+
+    - name: List downloaded files
+      run: ls -la downloads/
 
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add ./downloads
-        git commit -m "Update: Download yuque knowledge base $(date)"
-        git push
+        git commit -m "Update: Download yuque knowledge base $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
+        git push || echo "Nothing to push"
