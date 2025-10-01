@@ -3,6 +3,7 @@ name: Download Yuque Knowledge Base
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:  # 增加了手动触发的选项，方便随时更新
 
 jobs:
   download:
@@ -13,12 +14,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0  # 确保能获取完整的提交历史，避免合并冲突
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
+        cache: ''  # 因为是全局安装，所以不需要缓存项目依赖
 
     - name: Install yuque-dl
       run: npm install -g yuque-dl
@@ -34,6 +36,14 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        git add ./download
+        # 检查是否有修改，避免空提交
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update Yuque knowledge base [skip ci]"
+          git push
+        fi
         git add ./download
         git diff --staged --quiet || git commit -m "Update Yuque knowledge base [skip ci]"
         git push
