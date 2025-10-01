@@ -1,0 +1,45 @@
+name: Yuque Knowledge Base Download
+
+on:
+  workflow_dispatch:  # 手动触发
+  schedule:
+    - cron: '0 2 * * *'  # 每天凌晨2点自动运行
+
+jobs:
+  download-yuque:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install yuque-dl
+      run: npm install -g yuque-dl
+
+    - name: Download knowledge base
+      env:
+        YUQUE_TOKEN: ${{ secrets.YUQUE_TOKEN }}
+        YUQUE_KEY: ${{ secrets.YUQUE_KEY }}
+      run: |
+        # 基本用法
+        yuque-dl "https://www.yuque.com/david-gshie/nasbox" -d ./downloads
+        
+        # 如果有私有知识库需要token
+        # yuque-dl "https://www.yuque.com/your-private-kb" -t "$YUQUE_TOKEN"
+        
+        # 如果是企业版
+        # yuque-dl "https://your-company.yuque.com/kb" -k "$YUQUE_KEY" -t "$YUQUE_TOKEN"
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add ./downloads
+        git commit -m "Update: Download yuque knowledge base $(date)"
+        git push
